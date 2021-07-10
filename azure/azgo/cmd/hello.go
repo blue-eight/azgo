@@ -1,8 +1,7 @@
 package cmd
 
 import (
-	"fmt"
-
+	"github.com/blue-eight/private/azure/azgo/table"
 	"github.com/spf13/cobra"
 )
 
@@ -17,6 +16,5 @@ func init() {
 }
 
 func Hello(cmd *cobra.Command, args []string) error {
-	fmt.Printf("hello %s\n", args[0])
-	return nil
+	return table.ListTables()
 }
