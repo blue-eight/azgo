@@ -1,0 +1,1 @@
+az resource list | jq -c '.[] | {id_:.id, changedTime:.changedTime, createdTime:.createdTime, location:.location, name:.name, provisioningState:.provisioningState, resourceGroup:.resourceGroup, type:.type}'
