@@ -80,6 +80,15 @@ func init() {
 		},
 	})
 
+	mainCmd.AddCommand(&cobra.Command{
+		Use:   "query-delete [table] [query]",
+		Short: "...",
+		Args:  cobra.MinimumNArgs(2),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return table.Delete(args[0], args[1])
+		},
+	})
+
 	rootCmd.AddCommand(mainCmd)
 
 }

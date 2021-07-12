@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -21,20 +22,24 @@ func mustGetEnv(key string) string {
 }
 
 // TableClientFromEnv creates an *aztable.TableServiceClient authenticated
-// by the environment variables AZGO_TABLE_ACCOUNT and AZGO_TABLE_KEY
+// by the environment variables AZGO_TABLE_ACCOUNT and AZGO_TABLE_KEY.
+// This uses Cosmos DB by default, but also switches to Storage Account
+// if the optional environment variable AZGO_TABLE_TYPE="storage"
 func TableClientFromEnv() (*aztable.TableServiceClient, error) {
 	tableAccount := mustGetEnv("AZGO_TABLE_ACCOUNT")
 	tableKey := mustGetEnv("AZGO_TABLE_KEY")
+	tableType := os.Getenv("AZGO_TABLE_TYPE")
+
 	credential, err := aztable.NewSharedKeyCredential(tableAccount, tableKey)
 	if err != nil {
 		return nil, err
 	}
+	accountEndpoint := "https://%s.table.cosmos.azure.com/"
+	if tableType == "storage" {
+		accountEndpoint = "https://%s.table.core.windows.net/"
+	}
 
-	// todo: switch between tableEndpoint and cosmosEndpoint
-	//tableEndpoint := "https://%s.table.core.windows.net/"
-
-	cosmosEndpoint := "https://%s.table.cosmos.azure.com/"
-	serviceURL := fmt.Sprintf(cosmosEndpoint, tableAccount)
+	serviceURL := fmt.Sprintf(accountEndpoint, tableAccount)
 	tableClientOptions := &aztable.TableClientOptions{}
 	serviceClient, err := aztable.NewTableServiceClient(serviceURL, credential, tableClientOptions)
 	if err != nil {
@@ -195,6 +200,37 @@ func Query(table, filter string) error {
 		resp := pager.PageResponse()
 		// TODO: let's explore AsModels here, too
 		for _, x := range resp.TableEntityQueryResponse.Value {
+			delete(x, "odata.etag")
+			b, err := json.Marshal(x)
+			if err != nil {
+				return err
+			}
+			fmt.Printf("%s\n", b)
+		}
+	}
+	return nil
+}
+
+func Delete(table, filter string) error {
+	if filter == "" {
+		return errors.New("filter must be supplied for Delete operation")
+	}
+	client, err := TableClientFromEnv()
+	if err != nil {
+		return err
+	}
+	tableClient := client.NewTableClient(table)
+	queryOptions := &aztable.QueryOptions{}
+	queryOptions.Filter = &filter
+	pager := tableClient.Query(queryOptions)
+	ctx := context.Background()
+	for pager.NextPage(ctx) {
+		resp := pager.PageResponse()
+		for _, x := range resp.TableEntityQueryResponse.Value {
+			_, err := tableClient.DeleteEntity(ctx, x["PartitionKey"].(string), x["RowKey"].(string), "*")
+			if err != nil {
+				return err
+			}
 			delete(x, "odata.etag")
 			b, err := json.Marshal(x)
 			if err != nil {
