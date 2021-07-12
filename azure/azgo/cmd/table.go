@@ -53,7 +53,16 @@ func init() {
 	})
 
 	mainCmd.AddCommand(&cobra.Command{
-		Use:   "insert-json [table] [value]",
+		Use:   "upsert-kv [table] [key] [value]",
+		Short: "...",
+		Args:  cobra.MinimumNArgs(3),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return table.UpsertKeyValue(args[0], args[1], args[2])
+		},
+	})
+
+	mainCmd.AddCommand(&cobra.Command{
+		Use:   "insert [table] [json]",
 		Short: "...",
 		Args:  cobra.MinimumNArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {

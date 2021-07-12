@@ -96,8 +96,31 @@ func DeleteTable(name string) error {
 	return err
 }
 
+func UpsertKeyValue(table, key, value string) error {
+	client, err := TableClientFromEnv()
+	if err != nil {
+		return err
+	}
+
+	entity := map[string]interface{}{
+		"ETag":         "*",
+		"PartitionKey": "main",
+		"RowKey":       key,
+		"Value":        value,
+	}
+
+	ctx := context.Background()
+	tableClient := client.NewTableClient(table)
+	_, err = tableClient.UpsertEntity(ctx, entity, aztable.TableUpdateMode(aztable.Replace))
+	if err != nil {
+		return err
+	}
+	return nil
+
+}
+
 // InsertKeyValue inserts an entity to the table with a default PartitionKey of
-// kv. It is an example of using a struct as an entity. Its only field is Value.
+// main. It is an example of using a struct as an entity. Its only field is Value.
 func InsertKeyValue(table, key, value string) error {
 	type KeyValue struct {
 		ETag         string
@@ -113,7 +136,7 @@ func InsertKeyValue(table, key, value string) error {
 
 	entity := KeyValue{
 		ETag:         "*",
-		PartitionKey: "kv",
+		PartitionKey: "main",
 		RowKey:       key,
 		Value:        value,
 	}
