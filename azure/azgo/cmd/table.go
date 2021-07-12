@@ -18,7 +18,7 @@ func init() {
 	}
 
 	mainCmd.AddCommand(&cobra.Command{
-		Use:   "list",
+		Use:   "table-list",
 		Short: "...",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return table.ListTables()
@@ -26,7 +26,7 @@ func init() {
 	})
 
 	mainCmd.AddCommand(&cobra.Command{
-		Use:   "create [name]",
+		Use:   "table-create [name]",
 		Short: "...",
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -35,7 +35,7 @@ func init() {
 	})
 
 	mainCmd.AddCommand(&cobra.Command{
-		Use:   "delete [name]",
+		Use:   "table-delete [name]",
 		Short: "...",
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -89,6 +89,24 @@ func init() {
 	})
 
 	mainCmd.AddCommand(&cobra.Command{
+		Use:   "delete [table] [partition-key] [row-key]",
+		Short: "...",
+		Args:  cobra.MinimumNArgs(3),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			resp, err := table.Delete(args[0], args[1], args[2])
+			if err != nil {
+				return err
+			}
+			b, err := json.Marshal(resp)
+			if err != nil {
+				return err
+			}
+			fmt.Printf("%s\n", b)
+			return nil
+		},
+	})
+
+	mainCmd.AddCommand(&cobra.Command{
 		Use:   "query [table] [query]",
 		Short: "...",
 		Args:  cobra.MinimumNArgs(1),
@@ -106,7 +124,7 @@ func init() {
 		Short: "...",
 		Args:  cobra.MinimumNArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return table.Delete(args[0], args[1])
+			return table.QueryDelete(args[0], args[1])
 		},
 	})
 

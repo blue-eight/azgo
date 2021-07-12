@@ -211,21 +211,7 @@ func Query(table, filter string) error {
 	return nil
 }
 
-func Get(table, partitionKey, rowKey string) (map[string]interface{}, error) {
-	client, err := TableClientFromEnv()
-	if err != nil {
-		return nil, err
-	}
-	tableClient := client.NewTableClient(table)
-	ctx := context.Background()
-	resp, err := tableClient.GetEntity(ctx, partitionKey, rowKey)
-	if err != nil {
-		return nil, err
-	}
-	return resp.Value, nil
-}
-
-func Delete(table, filter string) error {
+func QueryDelete(table, filter string) error {
 	if filter == "" {
 		return errors.New("filter must be supplied for Delete operation")
 	}
@@ -254,4 +240,37 @@ func Delete(table, filter string) error {
 		}
 	}
 	return nil
+}
+
+func Get(table, partitionKey, rowKey string) (map[string]interface{}, error) {
+	client, err := TableClientFromEnv()
+	if err != nil {
+		return nil, err
+	}
+	tableClient := client.NewTableClient(table)
+	ctx := context.Background()
+	resp, err := tableClient.GetEntity(ctx, partitionKey, rowKey)
+	if err != nil {
+		return nil, err
+	}
+	return resp.Value, nil
+}
+
+func Delete(table, partitionKey, rowKey string) (map[string]interface{}, error) {
+	client, err := TableClientFromEnv()
+	if err != nil {
+		return nil, err
+	}
+	tableClient := client.NewTableClient(table)
+	ctx := context.Background()
+	resp, err := tableClient.GetEntity(ctx, partitionKey, rowKey)
+	if err != nil {
+		return nil, err
+	}
+	x := resp.Value
+	_, err = tableClient.DeleteEntity(ctx, x["PartitionKey"].(string), x["RowKey"].(string), "*")
+	if err != nil {
+		return nil, err
+	}
+	return resp.Value, nil
 }
