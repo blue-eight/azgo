@@ -1,6 +1,9 @@
 package cmd
 
 import (
+	"encoding/json"
+	"fmt"
+
 	"github.com/blue-eight/private/azure/azgo/table"
 	"github.com/spf13/cobra"
 )
@@ -64,6 +67,24 @@ func init() {
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return table.InsertStdin(args[0])
+		},
+	})
+
+	mainCmd.AddCommand(&cobra.Command{
+		Use:   "get [table] [partition-key] [row-key]",
+		Short: "...",
+		Args:  cobra.MinimumNArgs(3),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			resp, err := table.Get(args[0], args[1], args[2])
+			if err != nil {
+				return err
+			}
+			b, err := json.Marshal(resp)
+			if err != nil {
+				return err
+			}
+			fmt.Printf("%s\n", b)
+			return nil
 		},
 	})
 
