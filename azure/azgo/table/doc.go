@@ -1,6 +1,11 @@
 /*
 Package table contains functions that use the
-github.com/Azure/azure-sdk-for-go/sdk/tables/aztable package.
+github.com/Azure/azure-sdk-for-go/sdk/tables/aztable package
+(see: https://github.com/Azure/azure-sdk-for-go/tree/track2-tables ).
+While in preview, this must be installed via:
+
+	go get github.com/Azure/azure-sdk-for-go/sdk/internal@track2-tables
+	go get github.com/Azure/azure-sdk-for-go/sdk/tables/aztable@track2-tables
 
 In our sample app, we call these via commands in cmd/table.go. These include:
 
