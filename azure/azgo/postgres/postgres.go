@@ -5,10 +5,12 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/lib/pq"
 	_ "github.com/lib/pq"
 )
 
@@ -81,6 +83,7 @@ func InsertJSON(table, key string, value interface{}) error {
 	if err != nil {
 		return err
 	}
+	defer db.Close()
 
 	b, err := json.Marshal(value)
 	if err != nil {
@@ -106,6 +109,7 @@ func InsertKeyValue(table, key, value string) error {
 	if err != nil {
 		return err
 	}
+	defer db.Close()
 
 	_, err = db.Exec("insert into "+table+" values ($1, $2);", key, value)
 	if err != nil {
@@ -124,6 +128,7 @@ func Exec(sql string, args ...interface{}) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
+	defer db.Close()
 
 	result, err := db.Exec(sql, args)
 	if err != nil {
@@ -148,6 +153,7 @@ func Delete(table, key string) error {
 	if err != nil {
 		return err
 	}
+	defer db.Close()
 
 	_, err = db.Exec("delete from "+table+" where key = $1;", key)
 	if err != nil {
@@ -171,6 +177,7 @@ func QueryKeyValue(query string) error {
 	if err != nil {
 		return err
 	}
+	defer db.Close()
 
 	rows, err := db.Query(query)
 	if err != nil {
@@ -208,6 +215,7 @@ func QueryString(query string) error {
 	if err != nil {
 		return err
 	}
+	defer db.Close()
 
 	rows, err := db.Query(query)
 	if err != nil {
@@ -244,6 +252,7 @@ func QueryJSON(query string) error {
 	if err != nil {
 		return err
 	}
+	defer db.Close()
 
 	rows, err := db.Query(query)
 	if err != nil {
@@ -298,6 +307,7 @@ func ListTables() error {
 	if err != nil {
 		return err
 	}
+	defer db.Close()
 
 	rows, err := db.Query(query)
 	if err != nil {
@@ -336,6 +346,7 @@ func CreateTable(name, valueType string) error {
 	if err != nil {
 		return err
 	}
+	defer db.Close()
 
 	sql1 := `
 	create table %s (
@@ -358,6 +369,7 @@ func DeleteTable(name string) error {
 	if err != nil {
 		return err
 	}
+	defer db.Close()
 
 	sql1 := `drop table %s;`
 
@@ -366,6 +378,125 @@ func DeleteTable(name string) error {
 		return err
 	}
 
+	return nil
+}
+
+// InsertStdinBulk takes one or more records from the standard input and inserts
+// them individually using insertBulkJSON rather than InsertStdin's insertJSON.
+// This uses the bulk import approach outlined in the pq docs:
+// https://pkg.go.dev/github.com/lib/pq#hdr-Bulk_imports
+// We set a batchSize, which defaults to 100 if batchSize == 0
+func InsertStdinBulk(table string, batchSize int) error {
+	if batchSize == 0 {
+		batchSize = 100
+	}
+
+	db, err := DbFromEnv()
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	type keyValue struct {
+		Key   string
+		Value interface{}
+	}
+
+	insertBulkJSON := func(table string, values []keyValue) (int64, error) {
+
+		txn, err := db.Begin()
+		if err != nil {
+			return 0, err
+		}
+
+		stmt, err := txn.Prepare(pq.CopyIn(table, "key", "value"))
+		if err != nil {
+			return 0, err
+		}
+
+		for _, value := range values {
+			b, err := json.Marshal(value.Value)
+			if err != nil {
+				return 0, err
+			}
+
+			_, err = stmt.Exec(value.Key, string(b))
+			if err != nil {
+				return 0, err
+			}
+		}
+
+		result, err := stmt.Exec()
+		if err != nil {
+			return 0, err
+		}
+		rowsAffected, err := result.RowsAffected()
+		if err != nil {
+			return 0, err
+		}
+
+		err = stmt.Close()
+		if err != nil {
+			return 0, err
+		}
+
+		err = txn.Commit()
+		if err != nil {
+			return 0, err
+		}
+
+		return rowsAffected, nil
+	}
+
+	scanner := bufio.NewScanner(os.Stdin)
+
+	map1 := map[string]interface{}{}
+
+	batch := []keyValue{}
+	i := 0
+	for scanner.Scan() {
+
+		err := json.Unmarshal(scanner.Bytes(), &map1)
+		if err != nil {
+			return nil
+		}
+		key := ""
+		if val, ok := map1["Key"]; ok {
+			if k, ok := val.(string); ok {
+				key = k
+			}
+		}
+		if key == "" {
+			key = uuid.NewString()
+		}
+		kv := keyValue{
+			Key:   key,
+			Value: map1,
+		}
+		batch = append(batch, kv)
+
+		i++
+		if batchSize == i {
+			rowsAffected, err := insertBulkJSON(table, batch)
+			if err != nil {
+				return err
+			}
+			log.Printf("Rows Affected: %d\n", rowsAffected)
+			batch = []keyValue{}
+		}
+	}
+	if len(batch) > 0 {
+		rowsAffected, err := insertBulkJSON(table, batch)
+		if err != nil {
+			return err
+		}
+		log.Printf("Rows Affected: %d\n", rowsAffected)
+		batch = []keyValue{}
+	}
+
+	if err := scanner.Err(); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -378,6 +509,7 @@ func InsertStdin(table string) error {
 	if err != nil {
 		return err
 	}
+	defer db.Close()
 
 	insertJSON := func(table, key string, value interface{}) error {
 		b, err := json.Marshal(value)

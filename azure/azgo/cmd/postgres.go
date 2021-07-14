@@ -51,7 +51,8 @@ func init() {
 		Short: "...",
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return postgres.InsertStdin(args[0])
+			// TODO: consider making batchSize configurable here
+			return postgres.InsertStdinBulk(args[0], 100)
 		},
 	})
 
