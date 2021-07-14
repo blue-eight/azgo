@@ -557,7 +557,7 @@ func InsertStdin(table string) error {
 // DbFromEnv creates a *sql.DB authenticated by the environment variable
 // POSTGRES_SQL
 func DbFromEnv() (*sql.DB, error) {
-	connStr := os.Getenv("POSTGRES_URL")
+	connStr := mustGetEnv("POSTGRES_URL")
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
 		return nil, err
@@ -569,4 +569,12 @@ func DbFromEnv() (*sql.DB, error) {
 type KeyValue struct {
 	Key   string
 	Value string
+}
+
+func mustGetEnv(key string) string {
+	value := os.Getenv(key)
+	if value == "" {
+		log.Fatalf("Require environment variable: %s\n", key)
+	}
+	return value
 }
