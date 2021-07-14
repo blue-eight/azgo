@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"github.com/blue-eight/private/azure/azgo/table/blob"
+	"github.com/blue-eight/private/azure/azgo/blob"
 	"github.com/spf13/cobra"
 )
 
