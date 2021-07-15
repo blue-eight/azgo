@@ -13,6 +13,8 @@ import (
 	"github.com/Azure/azure-storage-blob-go/azblob"
 )
 
+// BlobFromEnv returns an *azblob.ServiceURL authenticated via the environment variables
+// AZGO_STORAGE_ACCOUNT_NAME and AZGO_STORAGE_ACCOUNT_KEY
 func BlobFromEnv() (*azblob.ServiceURL, error) {
 	accountName := mustGetEnv("AZGO_STORAGE_ACCOUNT_NAME")
 	accountKey := mustGetEnv("AZGO_STORAGE_ACCOUNT_KEY")
@@ -26,6 +28,8 @@ func BlobFromEnv() (*azblob.ServiceURL, error) {
 	return &serviceURL, nil
 }
 
+// CreateContainer creates a new container in the Blob Storage account
+// The container is created without any public access.
 func CreateContainer(container string) error {
 	serviceURL, err := BlobFromEnv()
 	if err != nil {
@@ -33,7 +37,7 @@ func CreateContainer(container string) error {
 	}
 
 	ctx := context.Background()
-	containerURL := serviceURL.NewContainerURL("mycontainer")
+	containerURL := serviceURL.NewContainerURL(container)
 	_, err = containerURL.Create(ctx, azblob.Metadata{}, azblob.PublicAccessNone)
 	if err != nil {
 		return err
@@ -41,6 +45,8 @@ func CreateContainer(container string) error {
 	return nil
 }
 
+// ListContainers lists all of the containers in the Blob Storage account.
+// It marsals the ContainerItems to JSON and writes them to the standard output.
 func ListContainers() error {
 	serviceURL, err := BlobFromEnv()
 	if err != nil {
@@ -67,6 +73,9 @@ func ListContainers() error {
 	return nil
 }
 
+// InsertKeyValue creates a new Block Blob of type text/plain which is
+// named "key" and has the string value "value". The container defaults
+// to "main" if empty.
 func InsertKeyValue(container, key, value string) error {
 	if container == "" {
 		container = "main"
@@ -92,6 +101,9 @@ func InsertKeyValue(container, key, value string) error {
 	return nil
 }
 
+// Get gets the Block Blob specified by "key" and returns it as a string.
+// This function is designed to be paired with InsertKeyValue. The container
+// defaults to "main" if empty.
 func Get(container, key string) (string, error) {
 	if container == "" {
 		container = "main"
@@ -116,6 +128,8 @@ func Get(container, key string) (string, error) {
 	return b.String(), nil
 }
 
+// Delete deletes a Block Blob specified by "key" in the given container.
+// The container defaults to "main" if empty.
 func Delete(container, key string) error {
 	if container == "" {
 		container = "main"
@@ -136,6 +150,7 @@ func Delete(container, key string) error {
 	return nil
 }
 
+// DeleteContainer deletes a container. The container defaults to "main" if empty.
 func DeleteContainer(container string) error {
 	if container == "" {
 		container = "main"
@@ -148,10 +163,6 @@ func DeleteContainer(container string) error {
 
 	ctx := context.Background()
 	containerURL := serviceURL.NewContainerURL(container)
-	_, err = containerURL.Create(ctx, azblob.Metadata{}, azblob.PublicAccessNone)
-	if err != nil {
-		return err
-	}
 	_, err = containerURL.Delete(ctx, azblob.ContainerAccessConditions{})
 	if err != nil {
 		return err
@@ -159,6 +170,8 @@ func DeleteContainer(container string) error {
 	return nil
 }
 
+// List lists the items in a container. The container defaults to "main"
+// if empty.
 func List(container string) error {
 	if container == "" {
 		container = "main"
