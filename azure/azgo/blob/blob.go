@@ -79,10 +79,6 @@ func InsertKeyValue(container, key, value string) error {
 
 	ctx := context.Background()
 	containerURL := serviceURL.NewContainerURL(container)
-	_, err = containerURL.Create(ctx, azblob.Metadata{}, azblob.PublicAccessNone)
-	if err != nil {
-		return err
-	}
 	blobURL := containerURL.NewBlockBlobURL(key)
 	body := strings.NewReader(value)
 	headers := azblob.BlobHTTPHeaders{ContentType: "text/plain"}
@@ -108,14 +104,10 @@ func Get(container, key string) (string, error) {
 
 	ctx := context.Background()
 	containerURL := serviceURL.NewContainerURL(container)
-	_, err = containerURL.Create(ctx, azblob.Metadata{}, azblob.PublicAccessNone)
-	if err != nil {
-		return "", err
-	}
 	blobURL := containerURL.NewBlockBlobURL(key)
 	res, err := blobURL.Download(ctx, 0, 0, azblob.BlobAccessConditions{}, false, azblob.ClientProvidedKeyOptions{})
 	if err != nil {
-		return "", nil
+		return "", err
 	}
 	b := &bytes.Buffer{}
 	reader := res.Body(azblob.RetryReaderOptions{})
@@ -136,10 +128,6 @@ func Delete(container, key string) error {
 
 	ctx := context.Background()
 	containerURL := serviceURL.NewContainerURL(container)
-	_, err = containerURL.Create(ctx, azblob.Metadata{}, azblob.PublicAccessNone)
-	if err != nil {
-		return err
-	}
 	blobURL := containerURL.NewBlockBlobURL(key)
 	_, err = blobURL.Delete(ctx, azblob.DeleteSnapshotsOptionNone, azblob.BlobAccessConditions{})
 	if err != nil {
@@ -148,7 +136,7 @@ func Delete(container, key string) error {
 	return nil
 }
 
-func DeleteContainer(container, key string) error {
+func DeleteContainer(container string) error {
 	if container == "" {
 		container = "main"
 	}
@@ -183,10 +171,6 @@ func List(container string) error {
 
 	ctx := context.Background()
 	containerURL := serviceURL.NewContainerURL(container)
-	_, err = containerURL.Create(ctx, azblob.Metadata{}, azblob.PublicAccessNone)
-	if err != nil {
-		return err
-	}
 
 	marker := azblob.Marker{}
 	for marker.NotDone() {
