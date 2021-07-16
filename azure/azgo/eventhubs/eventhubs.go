@@ -12,6 +12,15 @@ import (
 	eventhub "github.com/Azure/azure-event-hubs-go/v3"
 )
 
+func EventHubFromEnv() (*eventhub.Hub, error) {
+	connStr := mustGetEnv("AZGO_EVENTHUBS_CONNECTION_STRING")
+	hub, err := eventhub.NewHubFromConnectionString(connStr)
+	if err != nil {
+		return nil, err
+	}
+	return hub, nil
+}
+
 func Send(message string) error {
 	hub, err := EventHubFromEnv()
 	if err != nil {
@@ -86,23 +95,14 @@ func Receive() error {
 	return nil
 }
 
-func Test() error {
-	return nil
-}
-
-func EventHubFromEnv() (*eventhub.Hub, error) {
-	connStr := mustGetEnv("AZGO_EVENTHUBS_CONNECTION_STRING")
-	hub, err := eventhub.NewHubFromConnectionString(connStr)
-	if err != nil {
-		return nil, err
-	}
-	return hub, nil
-}
-
 func mustGetEnv(key string) string {
 	value := os.Getenv(key)
 	if value == "" {
 		log.Fatalf("Require environment variable: %s\n", key)
 	}
 	return value
+}
+
+func Test() error {
+	return nil
 }

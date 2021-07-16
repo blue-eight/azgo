@@ -13,14 +13,6 @@ import (
 	"github.com/google/uuid"
 )
 
-func mustGetEnv(key string) string {
-	value := os.Getenv(key)
-	if value == "" {
-		log.Fatalf("Require environment variable: %s\n", key)
-	}
-	return value
-}
-
 // TableClientFromEnv creates an *aztable.TableServiceClient authenticated
 // by the environment variables AZGO_TABLE_ACCOUNT and AZGO_TABLE_KEY.
 // This uses Cosmos DB by default, but also lets us choose Storage Account
@@ -312,4 +304,12 @@ func Delete(table, partitionKey, rowKey string) (map[string]interface{}, error) 
 		return nil, err
 	}
 	return resp.Value, nil
+}
+
+func mustGetEnv(key string) string {
+	value := os.Getenv(key)
+	if value == "" {
+		log.Fatalf("Require environment variable: %s\n", key)
+	}
+	return value
 }

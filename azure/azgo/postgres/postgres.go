@@ -7,95 +7,21 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/lib/pq"
 	_ "github.com/lib/pq"
 )
 
-// Test is a test function that currently tests the InsertKeyValue,
-// Delete, InsertJSON, and QueryKeyValue JSON. This should be moved
-// to an actual test.
-func Test() error {
-
-	kv := KeyValue{
-		Key:   "InsertJSON",
-		Value: time.Now().UTC().String(),
-	}
-
-	kv.Key = "kv"
-	err := InsertKeyValue("", kv.Key, kv.Value)
+// DbFromEnv creates a *sql.DB authenticated by the environment variable
+// POSTGRES_SQL
+func DbFromEnv() (*sql.DB, error) {
+	connStr := mustGetEnv("POSTGRES_URL")
+	db, err := sql.Open("postgres", connStr)
 	if err != nil {
-		return err
+		return nil, err
 	}
-
-	kv.Key = "delete"
-	err = InsertKeyValue("", kv.Key, kv.Value)
-	if err != nil {
-		return err
-	}
-	err = Delete("", kv.Key)
-	if err != nil {
-		return err
-	}
-
-	kv.Key = "kvjson"
-	err = InsertJSON("", kv.Key, kv)
-	if err != nil {
-		return err
-	}
-
-	kv.Key = "kvjsonb"
-	err = InsertJSON("kvjsonb", kv.Key, kv)
-	if err != nil {
-		return err
-	}
-
-	err = QueryKeyValue("")
-	if err != nil {
-		return err
-	}
-
-	err = QueryKeyValue("select key, value from kvjson")
-	if err != nil {
-		return err
-	}
-
-	err = QueryKeyValue("select key, value from kvjsonb")
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// InsertJSON inserts JSON into the table (default: kvjson) by
-// marshalling an interface. The main benefit here is that we
-// validate that we are inserting valid JSON by marshalling prior
-// to insertion.
-func InsertJSON(table, key string, value interface{}) error {
-	if table == "" {
-		table = "kvjson"
-	}
-
-	db, err := DbFromEnv()
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-
-	b, err := json.Marshal(value)
-	if err != nil {
-		return err
-	}
-
-	_, err = db.Exec("insert into "+table+" values ($1, $2);", key, b)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return db, nil
 }
 
 // InsertKeyValue inserts a key/value pair into a table. The name
@@ -554,17 +480,6 @@ func InsertStdin(table string) error {
 	return nil
 }
 
-// DbFromEnv creates a *sql.DB authenticated by the environment variable
-// POSTGRES_SQL
-func DbFromEnv() (*sql.DB, error) {
-	connStr := mustGetEnv("POSTGRES_URL")
-	db, err := sql.Open("postgres", connStr)
-	if err != nil {
-		return nil, err
-	}
-	return db, nil
-}
-
 // KeyValue is a simple struct to represent a Key/Value pair
 type KeyValue struct {
 	Key   string
@@ -577,4 +492,8 @@ func mustGetEnv(key string) string {
 		log.Fatalf("Require environment variable: %s\n", key)
 	}
 	return value
+}
+
+func Test() error {
+	return nil
 }

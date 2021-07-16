@@ -121,14 +121,14 @@ func Receive(queue string) (string, error) {
 	return result, nil
 }
 
-func Test() error {
-	return nil
-}
-
 func mustGetEnv(key string) string {
 	value := os.Getenv(key)
 	if value == "" {
 		log.Fatalf("Require environment variable: %s\n", key)
 	}
 	return value
+}
+
+func Test() error {
+	return nil
 }

@@ -208,14 +208,14 @@ func List(container string) error {
 	return nil
 }
 
-func Test() error {
-	return nil
-}
-
 func mustGetEnv(key string) string {
 	value := os.Getenv(key)
 	if value == "" {
 		log.Fatalf("Require environment variable: %s\n", key)
 	}
 	return value
+}
+
+func Test() error {
+	return nil
 }
