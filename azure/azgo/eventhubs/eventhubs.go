@@ -12,6 +12,10 @@ import (
 	eventhub "github.com/Azure/azure-event-hubs-go/v3"
 )
 
+// EventHubFromEnv creates a new *eventhub.Hub authenticated via the
+// AZGO_EVENTHUBS_CONNECTION_STRING environment variable. The event
+// hub should be pre-created and specified as part of the connection
+// string.
 func EventHubFromEnv() (*eventhub.Hub, error) {
 	connStr := mustGetEnv("AZGO_EVENTHUBS_CONNECTION_STRING")
 	hub, err := eventhub.NewHubFromConnectionString(connStr)
@@ -21,6 +25,8 @@ func EventHubFromEnv() (*eventhub.Hub, error) {
 	return hub, nil
 }
 
+// Send sends a message to the event hub via the NewEventFromString
+// method.
 func Send(message string) error {
 	hub, err := EventHubFromEnv()
 	if err != nil {
@@ -35,6 +41,8 @@ func Send(message string) error {
 	return nil
 }
 
+// SendStdin sends a stream of events from the standard input to the
+// event hub via the NewEventFromString method.
 func SendStdin() error {
 	hub, err := EventHubFromEnv()
 	if err != nil {
@@ -54,6 +62,8 @@ func SendStdin() error {
 	return nil
 }
 
+// Receive receives events from the event hub, marshals them to JSON,
+// and writes them to the standard output.
 func Receive() error {
 	hub, err := EventHubFromEnv()
 	if err != nil {

@@ -11,6 +11,8 @@ import (
 	servicebus "github.com/Azure/azure-service-bus-go"
 )
 
+// ServiceBusFromEnv creates a new *servicebus.Namespace authenticated via the
+// AZGO_SERVICEBUS_CONNECTION_STRING environment variable
 func ServiceBusFromEnv() (*servicebus.Namespace, error) {
 	connStr := mustGetEnv("AZGO_SERVICEBUS_CONNECTION_STRING")
 	ns, err := servicebus.NewNamespace(servicebus.NamespaceWithConnectionString(connStr))
@@ -20,6 +22,7 @@ func ServiceBusFromEnv() (*servicebus.Namespace, error) {
 	return ns, nil
 }
 
+// CreateQueue creates a service bus queue.
 func CreateQueue(name string) error {
 	ns, err := ServiceBusFromEnv()
 	if err != nil {
@@ -35,6 +38,7 @@ func CreateQueue(name string) error {
 	return nil
 }
 
+// DeleteQueue deletes a service bus queue.
 func DeleteQueue(name string) error {
 	ns, err := ServiceBusFromEnv()
 	if err != nil {
@@ -50,6 +54,8 @@ func DeleteQueue(name string) error {
 	return nil
 }
 
+// ListQueues lists service bus queues in the account and marshals them
+// to JSON which provides full details.
 func ListQueues() error {
 	ns, err := ServiceBusFromEnv()
 	if err != nil {
@@ -72,6 +78,7 @@ func ListQueues() error {
 	return nil
 }
 
+// Send sends a message to the named service bus queue.
 func Send(queue, message string) error {
 	ns, err := ServiceBusFromEnv()
 	if err != nil {
@@ -91,6 +98,8 @@ func Send(queue, message string) error {
 	return nil
 }
 
+// Receive receives a single message from the service bus queue using the
+// ReceiveOne method, with the help of a channel.
 func Receive(queue string) (string, error) {
 
 	ns, err := ServiceBusFromEnv()
