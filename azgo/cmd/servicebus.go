@@ -3,7 +3,7 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/blue-eight/private/azure/azgo/servicebus"
+	"github.com/blue-eight/azgo/azgo/servicebus"
 	"github.com/spf13/cobra"
 )
 

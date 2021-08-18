@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/blue-eight/private/azure/azgo/cmd"
+	"github.com/blue-eight/azgo/azgo/cmd"
 )
 
 func main() {

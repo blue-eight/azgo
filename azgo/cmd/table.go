@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/blue-eight/private/azure/azgo/table"
+	"github.com/blue-eight/azgo/azgo/table"
 	"github.com/spf13/cobra"
 )
 

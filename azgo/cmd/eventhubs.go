@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"github.com/blue-eight/private/azure/azgo/eventhubs"
+	"github.com/blue-eight/azgo/azgo/eventhubs"
 	"github.com/spf13/cobra"
 )
 

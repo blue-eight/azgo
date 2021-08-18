@@ -1,4 +1,4 @@
-module github.com/blue-eight/private/azure/azgo
+module github.com/blue-eight/azgo/azgo
 
 go 1.16
 

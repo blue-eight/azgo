@@ -1,13 +1,15 @@
 package cmd
 
 import (
-	"github.com/blue-eight/private/azure/azgo/postgres"
+	"fmt"
+
+	"github.com/blue-eight/azgo/azgo/blob"
 	"github.com/spf13/cobra"
 )
 
 func init() {
 	var mainCmd = &cobra.Command{
-		Use:   "postgres",
+		Use:   "blob",
 		Short: "...",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return cmd.Usage()
@@ -15,71 +17,73 @@ func init() {
 	}
 
 	mainCmd.AddCommand(&cobra.Command{
-		Use:   "table-list",
+		Use:   "container-list",
 		Short: "...",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return postgres.ListTables()
+			return blob.ListContainers()
 		},
 	})
 
 	mainCmd.AddCommand(&cobra.Command{
-		Use:   "table-create [name] [?type]",
+		Use:   "container-create [name]",
 		Short: "...",
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			valueType := ""
-			if len(args) == 2 {
-				if args[1] == "jsonb" || args[1] == "text" || args[1] == "json" {
-					valueType = args[1]
-				}
+			return blob.CreateContainer(args[0])
+		},
+	})
+
+	mainCmd.AddCommand(&cobra.Command{
+		Use:   "container-delete [name]",
+		Short: "...",
+		Args:  cobra.MinimumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return blob.DeleteContainer(args[0])
+		},
+	})
+
+	mainCmd.AddCommand(&cobra.Command{
+		Use:   "insert-kv [container] [key] [value]",
+		Short: "...",
+		Args:  cobra.MinimumNArgs(3),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return blob.InsertKeyValue(args[0], args[1], args[2])
+		},
+	})
+
+	mainCmd.AddCommand(&cobra.Command{
+		Use:   "get [container] [key]",
+		Short: "...",
+		Args:  cobra.MinimumNArgs(2),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			value, err := blob.Get(args[0], args[1])
+			if err != nil {
+				return err
 			}
-			return postgres.CreateTable(args[0], valueType)
+			fmt.Printf("%s\n", value)
+			return nil
 		},
 	})
 
 	mainCmd.AddCommand(&cobra.Command{
-		Use:   "table-delete [name]",
+		Use:   "delete [container] [key]",
 		Short: "...",
-		Args:  cobra.MinimumNArgs(1),
+		Args:  cobra.MinimumNArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return postgres.DeleteTable(args[0])
+			err := blob.Delete(args[0], args[1])
+			if err != nil {
+				return err
+			}
+			return nil
 		},
 	})
 
 	mainCmd.AddCommand(&cobra.Command{
-		Use:   "insert-stdin [table]",
+		Use:   "list [container]",
 		Short: "...",
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// TODO: consider making batchSize configurable here
-			return postgres.InsertStdinBulk(args[0], 100)
-		},
-	})
-
-	mainCmd.AddCommand(&cobra.Command{
-		Use:   "query [query]",
-		Short: "...",
-		Args:  cobra.MinimumNArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return postgres.QueryString(args[0])
-		},
-	})
-
-	mainCmd.AddCommand(&cobra.Command{
-		Use:   "query-json [query]",
-		Short: "...",
-		Args:  cobra.MinimumNArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return postgres.QueryJSON(args[0])
-		},
-	})
-
-	mainCmd.AddCommand(&cobra.Command{
-		Use:   "query-kv [query]",
-		Short: "...",
-		Args:  cobra.MinimumNArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return postgres.QueryKeyValue(args[0])
+			return blob.List(args[0])
 		},
 	})
 
@@ -87,7 +91,7 @@ func init() {
 		Use:   "test",
 		Short: "...",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return postgres.Test()
+			return blob.Test()
 		},
 	})
 
