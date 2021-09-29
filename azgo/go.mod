@@ -4,9 +4,12 @@ go 1.16
 
 require (
 	github.com/Azure/azure-event-hubs-go/v3 v3.3.10 // indirect
-	github.com/Azure/azure-sdk-for-go v55.7.0+incompatible // indirect
-	github.com/Azure/azure-sdk-for-go/sdk/internal v0.5.2-0.20210714154028-658d8c542a56 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/armcore v0.8.0 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/azcore v0.19.0 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/azidentity v0.11.0 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/resources/armresources v0.3.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/tables/aztable v0.0.0-20210714154028-658d8c542a56
+	github.com/Azure/azure-sdk-for-go/sdk/to v0.1.4 // indirect
 	github.com/Azure/azure-service-bus-go v0.10.14 // indirect
 	github.com/Azure/azure-storage-blob-go v0.14.0 // indirect
 	github.com/Azure/go-amqp v0.13.9 // indirect
