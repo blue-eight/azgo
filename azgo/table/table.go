@@ -9,20 +9,20 @@ import (
 	"log"
 	"os"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/tables/aztable"
+	"github.com/Azure/azure-sdk-for-go/sdk/data/aztables"
 	"github.com/google/uuid"
 )
 
-// TableClientFromEnv creates an *aztable.TableServiceClient authenticated
+// TableClientFromEnv creates an *aztables.TableServiceClient authenticated
 // by the environment variables AZGO_TABLE_ACCOUNT and AZGO_TABLE_KEY.
 // This uses Cosmos DB by default, but also lets us choose Storage Account
 // if the optional environment variable AZGO_TABLE_TYPE="storage"
-func TableClientFromEnv() (*aztable.TableServiceClient, error) {
+func ServiceClientFromEnv() (*aztables.ServiceClient, error) {
 	tableAccount := mustGetEnv("AZGO_TABLE_ACCOUNT")
 	tableKey := mustGetEnv("AZGO_TABLE_KEY")
 	tableType := os.Getenv("AZGO_TABLE_TYPE")
 
-	credential, err := aztable.NewSharedKeyCredential(tableAccount, tableKey)
+	credential, err := aztables.NewSharedKeyCredential(tableAccount, tableKey)
 	if err != nil {
 		return nil, err
 	}
@@ -32,8 +32,8 @@ func TableClientFromEnv() (*aztable.TableServiceClient, error) {
 	}
 
 	serviceURL := fmt.Sprintf(accountEndpoint, tableAccount)
-	tableClientOptions := &aztable.TableClientOptions{}
-	serviceClient, err := aztable.NewTableServiceClient(serviceURL, credential, tableClientOptions)
+	tableClientOptions := &aztables.ClientOptions{}
+	serviceClient, err := aztables.NewServiceClient(serviceURL, credential, tableClientOptions)
 	if err != nil {
 		return nil, err
 	}
@@ -44,15 +44,17 @@ func TableClientFromEnv() (*aztable.TableServiceClient, error) {
 // the standard output. It does this without supplying any filter
 // to the Query() function.
 func ListTables() error {
-	client, err := TableClientFromEnv()
+	//client, err := TableClientFromEnv()
+	client, err := ServiceClientFromEnv()
+
 	if err != nil {
 		return err
 	}
-	pager := client.Query(nil)
+	pager := client.ListTables(nil)
 	ctx := context.Background()
 	for pager.NextPage(ctx) {
 		resp := pager.PageResponse()
-		for _, item := range resp.TableQueryResponse.Value {
+		for _, item := range resp.Tables {
 			map1 := map[string]interface{}{
 				"name": *item.TableName,
 			}
@@ -68,30 +70,30 @@ func ListTables() error {
 
 // CreateTable creates a table in the account
 func CreateTable(name string) error {
-	client, err := TableClientFromEnv()
+	client, err := ServiceClientFromEnv()
 	if err != nil {
 		return err
 	}
 	ctx := context.Background()
-	_, err = client.Create(ctx, name)
+	_, err = client.CreateTable(ctx, name, nil)
 	return err
 }
 
 // DeleteTable deletes a table from the account
 func DeleteTable(name string) error {
-	client, err := TableClientFromEnv()
+	client, err := ServiceClientFromEnv()
 	if err != nil {
 		return err
 	}
 	ctx := context.Background()
-	_, err = client.Delete(ctx, name)
+	_, err = client.DeleteTable(ctx, name, nil)
 	return err
 }
 
 // UpsertKeyValue upserts an entity into the table with a default PartitionKey of
 // main. In this case we use a map[string]interface{} to do so. Its only field is Value.
 func UpsertKeyValue(table, key, value string) error {
-	client, err := TableClientFromEnv()
+	client, err := ServiceClientFromEnv()
 	if err != nil {
 		return err
 	}
@@ -102,10 +104,14 @@ func UpsertKeyValue(table, key, value string) error {
 		"RowKey":       key,
 		"Value":        value,
 	}
+	b, err := json.Marshal(entity)
+	if err != nil {
+		return err
+	}
 
 	ctx := context.Background()
-	tableClient := client.NewTableClient(table)
-	_, err = tableClient.UpsertEntity(ctx, entity, aztable.TableUpdateMode(aztable.Replace))
+	tableClient := client.NewClient(table)
+	_, err = tableClient.UpdateEntity(ctx, b, &aztables.UpdateEntityOptions{UpdateMode: aztables.ReplaceEntity})
 	if err != nil {
 		return err
 	}
@@ -123,7 +129,7 @@ func InsertKeyValue(table, key, value string) error {
 		Value        string
 	}
 
-	client, err := TableClientFromEnv()
+	client, err := ServiceClientFromEnv()
 	if err != nil {
 		return err
 	}
@@ -134,10 +140,13 @@ func InsertKeyValue(table, key, value string) error {
 		RowKey:       key,
 		Value:        value,
 	}
-
+	b, err := json.Marshal(entity)
+	if err != nil {
+		return err
+	}
 	ctx := context.Background()
-	tableClient := client.NewTableClient(table)
-	_, err = tableClient.AddEntity(ctx, entity)
+	tableClient := client.NewClient(table)
+	_, err = tableClient.AddEntity(ctx, b, nil)
 	if err != nil {
 		return err
 	}
@@ -151,7 +160,7 @@ func InsertKeyValue(table, key, value string) error {
 // the entity type.
 func InsertJSON(table string, value []byte) error {
 
-	client, err := TableClientFromEnv()
+	client, err := ServiceClientFromEnv()
 	if err != nil {
 		return err
 	}
@@ -170,10 +179,14 @@ func InsertJSON(table string, value []byte) error {
 
 	// TODO: insert stalls in certain cases if we add this
 	//entity["ETag"] = "*"
+	b, err := json.Marshal(entity)
+	if err != nil {
+		return err
+	}
 
 	ctx := context.Background()
-	tableClient := client.NewTableClient(table)
-	_, err = tableClient.AddEntity(ctx, entity)
+	tableClient := client.NewClient(table)
+	_, err = tableClient.AddEntity(ctx, b, nil)
 	if err != nil {
 		return err
 	}
@@ -205,23 +218,28 @@ func InsertStdin(table string) error {
 // 	PartitionKey eq 'main' and resourceGroup ge '2' and resourceGroup le '3'
 // The latter is a useful way to find items with a particular prefix (in this case '2')
 func Query(table, filter string) error {
-	client, err := TableClientFromEnv()
+	client, err := ServiceClientFromEnv()
 	if err != nil {
 		return err
 	}
-	tableClient := client.NewTableClient(table)
-	queryOptions := &aztable.QueryOptions{
+	tableClient := client.NewClient(table)
+	queryOptions := &aztables.ListEntitiesOptions{
 		Filter: &filter,
 	}
-	pager := tableClient.Query(queryOptions)
+	pager := tableClient.List(queryOptions)
 	ctx := context.Background()
 	for pager.NextPage(ctx) {
 		resp := pager.PageResponse()
 		// TODO: let's explore AsModels here, too
-		for _, x := range resp.TableEntityQueryResponse.Value {
+		for _, x := range resp.Entities {
+			entity := map[string]interface{}{}
+			err = json.Unmarshal(x, &entity)
+			if err != nil {
+				return err
+			}
 			// we remove the odata.etag for cleaner/friendlier output
-			delete(x, "odata.etag")
-			b, err := json.Marshal(x)
+			delete(entity, "odata.etag")
+			b, err := json.Marshal(entity)
 			if err != nil {
 				return err
 			}
@@ -239,26 +257,31 @@ func QueryDelete(table, filter string) error {
 	if filter == "" {
 		return errors.New("filter must be supplied for Delete operation")
 	}
-	client, err := TableClientFromEnv()
+	client, err := ServiceClientFromEnv()
 	if err != nil {
 		return err
 	}
-	tableClient := client.NewTableClient(table)
-	queryOptions := &aztable.QueryOptions{
+	tableClient := client.NewClient(table)
+	queryOptions := &aztables.ListEntitiesOptions{
 		Filter: &filter,
 	}
-	pager := tableClient.Query(queryOptions)
+	pager := tableClient.List(queryOptions)
 	ctx := context.Background()
 	for pager.NextPage(ctx) {
 		resp := pager.PageResponse()
-		for _, x := range resp.TableEntityQueryResponse.Value {
-			_, err := tableClient.DeleteEntity(ctx, x["PartitionKey"].(string), x["RowKey"].(string), "*")
+		for _, x := range resp.Entities {
+			entity := map[string]interface{}{}
+			err := json.Unmarshal(x, &entity)
+			if err != nil {
+				return err
+			}
+			_, err = tableClient.DeleteEntity(ctx, entity["PartitionKey"].(string), entity["RowKey"].(string), nil)
 			if err != nil {
 				return err
 			}
 			// we remove the odata.etag for cleaner/friendlier output
-			delete(x, "odata.etag")
-			b, err := json.Marshal(x)
+			delete(entity, "odata.etag")
+			b, err := json.Marshal(entity)
 			if err != nil {
 				return err
 			}
@@ -272,38 +295,47 @@ func QueryDelete(table, filter string) error {
 // This guarantees we return a single item, or an error, and also avoids
 // us having to create a Query for a single item
 func Get(table, partitionKey, rowKey string) (map[string]interface{}, error) {
-	client, err := TableClientFromEnv()
+	client, err := ServiceClientFromEnv()
 	if err != nil {
 		return nil, err
 	}
-	tableClient := client.NewTableClient(table)
+	tableClient := client.NewClient(table)
 	ctx := context.Background()
-	resp, err := tableClient.GetEntity(ctx, partitionKey, rowKey)
+	resp, err := tableClient.GetEntity(ctx, partitionKey, rowKey, nil)
 	if err != nil {
 		return nil, err
 	}
-	return resp.Value, nil
+	entity := map[string]interface{}{}
+	err = json.Unmarshal(resp.Value, &entity)
+	if err != nil {
+		return nil, err
+	}
+	return entity, nil
 }
 
 // Delete deletes and returns a single item from a table by its PartitionKey
 // and RowKey. It will return an error if the item is not found.
 func Delete(table, partitionKey, rowKey string) (map[string]interface{}, error) {
-	client, err := TableClientFromEnv()
+	client, err := ServiceClientFromEnv()
 	if err != nil {
 		return nil, err
 	}
-	tableClient := client.NewTableClient(table)
+	tableClient := client.NewClient(table)
 	ctx := context.Background()
-	resp, err := tableClient.GetEntity(ctx, partitionKey, rowKey)
+	resp, err := tableClient.GetEntity(ctx, partitionKey, rowKey, nil)
 	if err != nil {
 		return nil, err
 	}
-	x := resp.Value
-	_, err = tableClient.DeleteEntity(ctx, x["PartitionKey"].(string), x["RowKey"].(string), "*")
+	entity := map[string]interface{}{}
+	err = json.Unmarshal(resp.Value, &entity)
 	if err != nil {
 		return nil, err
 	}
-	return resp.Value, nil
+	_, err = tableClient.DeleteEntity(ctx, entity["PartitionKey"].(string), entity["RowKey"].(string), nil)
+	if err != nil {
+		return nil, err
+	}
+	return entity, nil
 }
 
 func mustGetEnv(key string) string {
