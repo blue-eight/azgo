@@ -22,7 +22,7 @@ func TestRunCommand(t *testing.T) {
 	}
 	clusterName := os.Getenv("AKS_NAME")
 	if clusterName == "" {
-		log.Fatal("AKS_NAME not set")
+		log.Fatal("AKS_NAME not set.")
 	}
 	command := "kubectl run nginx --image=nginx"
 	res, err := RunCommand(subscriptionID, resourceGroup, clusterName, command)
