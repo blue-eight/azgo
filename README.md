@@ -1,6 +1,6 @@
 # azgo
 
-[![pkg.go.dev](https://pkg.go.dev/github.com/blue-eight/azgo/azgo?status.svg)](https://pkg.go.dev/github.com/blue-eight/azgo/azgo)
+[![Go Reference](https://pkg.go.dev/badge/github.com/blue-eight/azgo/tree/main/azgo.svg)](https://pkg.go.dev/github.com/blue-eight/azgo/tree/main/azgo)
 
 azgo is a simple CLI tool that demonstrates the use of Azure from the Go programming language.
 
