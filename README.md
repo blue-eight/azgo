@@ -6,7 +6,7 @@ azgo is a simple CLI tool that demonstrates the use of Azure from the Go program
 
 The CLI is built using the [spf13/cobra](https://github.com/spf13/cobra) library.
 
-The azgo CLI lives under `azgo/` as we may add other tools and libraries to this repo.
+The azgo CLI lives under [azgo/](azgo/) as we may add other tools and libraries to this repo.
 
 Packages in azgo are designed to be easy to borrow snippets of code from. However, most are to demonstrate to do not guarantee production-readiness. 
 
