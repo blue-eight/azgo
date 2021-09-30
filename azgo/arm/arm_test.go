@@ -1,14 +1,19 @@
 package arm
 
 import (
+	"log"
 	"os"
 	"testing"
 )
 
-func TestListResourcesWithPolicy(t *testing.T) {
+var subscriptionID string
+
+func init() {
 	subscriptionID := os.Getenv("AZURE_SUBSCRIPTION")
 	if subscriptionID == "" {
-		t.Error("AZURE_SUBSCRIPTION environment variable not set!")
+		log.Fatal("AZURE_SUBSCRIPTION environment variable not set!")
 	}
+}
+func TestListResourcesWithPolicy(t *testing.T) {
 	ListResourcesWithPolicy(subscriptionID)
 }
