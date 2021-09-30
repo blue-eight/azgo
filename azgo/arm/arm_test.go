@@ -9,7 +9,7 @@ import (
 var subscriptionID string
 
 func init() {
-	subscriptionID := os.Getenv("AZURE_SUBSCRIPTION")
+	subscriptionID = os.Getenv("AZURE_SUBSCRIPTION")
 	if subscriptionID == "" {
 		log.Fatal("AZURE_SUBSCRIPTION environment variable not set!")
 	}
