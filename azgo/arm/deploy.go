@@ -45,16 +45,16 @@ func DeployTemplateGroup(subscriptionID, resourceGroup, location string) error {
 	ctx := context.Background()
 	deploymentName := resourceGroup
 
-	req, err := client.BeginCreateOrUpdate(ctx, resourceGroup, deploymentName, deployment, options)
+	poller, err := client.BeginCreateOrUpdate(ctx, resourceGroup, deploymentName, deployment, options)
 
 	if err != nil {
 		return err
 	}
-	res, err := req.PollUntilDone(context.Background(), 5*time.Minute)
+	resp, err := poller.PollUntilDone(context.Background(), 5*time.Minute)
 	if err != nil {
 		return err
 	}
-	b, err := json.Marshal(res)
+	b, err := json.Marshal(resp)
 	if err != nil {
 		return err
 	}
